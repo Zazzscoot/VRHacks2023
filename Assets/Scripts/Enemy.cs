@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Enemy : MonoBehaviour
 {
@@ -11,8 +12,8 @@ public class Enemy : MonoBehaviour
     private int check = 0;
 
     public GameObject user;
-    public float walkSpeed = 1.2f;
-    public float runSpeed = 2.4f;
+    public float walkSpeed = 0.6f;
+    public float runSpeed = 1.2f;
     void Start()
     {
         animator = transform.GetComponent<Animator>();
@@ -22,9 +23,7 @@ public class Enemy : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //Tracks and rotates to user's position
-        RotateToUser();
-
+        this.GetComponent<Rigidbody>().velocity = Vector3.zero;
 
         //Testing walk/run/idle animation
         if (currentTime > 3)
@@ -32,6 +31,11 @@ public class Enemy : MonoBehaviour
             check = Random.Range(0, 3);
             currentTime = 0;
         }
+        currentTime += Time.deltaTime;
+
+
+        if (Vector3.Distance(user.transform.position, transform.position) < 1)
+            return;
 
         switch(check)
         {
@@ -49,30 +53,25 @@ public class Enemy : MonoBehaviour
                 break;
         }
 
-        currentTime += Time.deltaTime;
+        transform.GetComponent<NavMeshAgent>().SetDestination(user.transform.position);
     }
 
     void Idle()
     {
+        transform.GetComponent<NavMeshAgent>().speed = 0;
         animator.SetFloat("Speed", 0f, 0.1f, Time.deltaTime);
+        
     }
 
     void Walk()
     {
-        transform.position += transform.forward * walkSpeed * Time.deltaTime;
+        transform.GetComponent<NavMeshAgent>().speed = walkSpeed;
         animator.SetFloat("Speed", 0.5f, 0.1f, Time.deltaTime);
     }
 
     void Run()
     {
-        transform.position += transform.forward * runSpeed * Time.deltaTime;
+        transform.GetComponent<NavMeshAgent>().speed = runSpeed;
         animator.SetFloat("Speed", 1f, 0.1f, Time.deltaTime);
-    }
-
-    void RotateToUser()
-    {
-        Vector3 userVector = user.transform.position - transform.position;
-        float angle = Vector3.Angle(transform.forward, userVector);
-        transform.Rotate(0, angle, 0);
     }
 }
