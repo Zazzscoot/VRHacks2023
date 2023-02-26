@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -18,6 +19,8 @@ public class Enemy : MonoBehaviour
     public float viewRadius = 50f;
     public LayerMask userMask;
 
+    private float shootTime;
+
     private float viewAngle = 20f;
     public float meshResolution = 0.5f;
 
@@ -25,11 +28,14 @@ public class Enemy : MonoBehaviour
     public List<AudioClip> runClips;
     SpawnEnemy spawnEnemyInstance;
 
+    public GameObject bullet;
+    public AudioClip gunShot;
     void Start()
     {
         animator = transform.GetComponent<Animator>();
         currentTime = runTime = walkTime = 0;
         spawnEnemyInstance = SpawnEnemy.instance;
+        shootTime = 0f;
     }
 
     void Update()
@@ -46,7 +52,11 @@ public class Enemy : MonoBehaviour
         currentTime += Time.deltaTime;
 
         if (hp <= 0)
-            check = 3;
+        {
+            Death();
+            return;
+        }
+            
 
         if(DrawFieldOfView())
             return;
@@ -115,7 +125,18 @@ public class Enemy : MonoBehaviour
     {
         transform.GetComponent<NavMeshAgent>().speed = 0;
         animator.SetFloat("Speed", 0.75f, 0.1f, Time.deltaTime);
+        if (shootTime > 0.3f)
+        {
+            GameObject newBullet = Instantiate(bullet, this.transform.position + Vector3.forward * 1f, Quaternion.identity);
+            newBullet.GetComponent<Rigidbody>().velocity = Vector3.forward * 5.0f;
+            shootTime = 0;
+            GetComponent<AudioSource>().clip = gunShot;
+            GetComponent<AudioSource>().Play();
+        }
+        shootTime+= Time.deltaTime;
     }
+
+    
 
     public void Death()
     {
@@ -175,5 +196,14 @@ public class Enemy : MonoBehaviour
 
         return false;
 
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if(other.gameObject.tag == "Bullet")
+        {
+            Destroy(other.gameObject);
+            this.hp -= 30;
+        }
     }
 }
